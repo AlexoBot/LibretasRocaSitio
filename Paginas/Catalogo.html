@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Catálogo de modelos de Libretas Roca: libretas ecológicas hechas a mano con materiales reciclados." />
+  <meta name="theme-color" content="#D9454C" />
+  <title>Catálogo | Libretas Roca</title>
+  <link rel="icon" href="../Fotos/Logo.jpg" type="image/jpeg" />
+  <link rel="stylesheet" href="../Styles.css" />
+  <script defer src="../Scripts.js"></script>
+</head>
+<body data-page="catalog" data-asset-prefix="../">
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+  <header class="site-header" data-header>
+    <nav class="navbar container" aria-label="Navegación principal">
+      <a class="brand" href="../Index.html" aria-label="Ir al inicio de Libretas Roca">
+        <span class="brand-mark" aria-hidden="true">LR</span>
+        <span>
+          <strong>Libretas Roca</strong>
+          <small>hechas a mano</small>
+        </span>
+      </a>
+
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-menu" data-menu-toggle>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span class="sr-only">Abrir menú</span>
+      </button>
+
+      <ul class="menu" id="main-menu" data-menu>
+        <li><a href="../Index.html">Inicio</a></li>
+        <li><a href="../Index.html#historia">Historia</a></li>
+        <li><a href="../Index.html#proceso">Proceso</a></li>
+        <li><a href="Catalogo.html" aria-current="page">Catálogo</a></li>
+        <li><a href="../Index.html#contacto">Contacto</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="contenido">
+    <section class="page-hero section-pad">
+      <div class="container page-hero-grid">
+        <div class="reveal">
+          <p class="eyebrow">Catálogo</p>
+          <h1>Modelos de libretas ecológicas</h1>
+          <p>Esta página está preparada para subir fotos de diferentes modelos. Puedes cambiar nombres, categorías, descripciones e imágenes desde <code>Scripts.js</code>.</p>
+        </div>
+        <div class="catalog-note reveal">
+          <strong>Tip rápido</strong>
+          <p>Guarda tus fotos en <code>Fotos/Modelos</code> y actualiza el arreglo <code>PRODUCTOS</code> en <code>Scripts.js</code>.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-pad section-soft">
+      <div class="container">
+        <div class="catalog-toolbar reveal" aria-label="Filtros del catálogo">
+          <button class="filter-btn is-active" type="button" data-filter="todos">Todos</button>
+          <button class="filter-btn" type="button" data-filter="notas">Notas</button>
+          <button class="filter-btn" type="button" data-filter="agenda">Agenda</button>
+          <button class="filter-btn" type="button" data-filter="dibujo">Dibujo</button>
+          <button class="filter-btn" type="button" data-filter="regalo">Regalo</button>
+        </div>
+
+        <div class="catalog-grid" id="catalogGrid" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="section-pad">
+      <div class="container cta-panel reveal">
+        <div>
+          <p class="eyebrow">¿Quieres un diseño especial?</p>
+          <h2>Pregunta por colores, tamaños y tipos de hoja.</h2>
+          <p>Para promociones, colaboraciones o pedidos personalizados, conecta con nosotros por Instagram o correo.</p>
+        </div>
+        <div class="cta-actions">
+          <a class="btn btn-primary instagram-link" href="https://www.instagram.com/" target="_blank" rel="noopener">Enviar DM en Instagram</a>
+          <a class="btn btn-ghost" href="mailto:contacto@libretasroca.com">Enviar correo</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal" data-modal hidden>
+    <div class="modal-backdrop" data-close-modal></div>
+    <article class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" type="button" data-close-modal aria-label="Cerrar vista de producto">×</button>
+      <img data-modal-image src="" alt="" />
+      <div class="modal-content">
+        <p class="eyebrow" data-modal-category></p>
+        <h2 id="modalTitle" data-modal-title></h2>
+        <p data-modal-description></p>
+      </div>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <a class="brand footer-brand" href="../Index.html">
+          <span class="brand-mark" aria-hidden="true">LR</span>
+          <span><strong>Libretas Roca</strong><small>hechas a mano</small></span>
+        </a>
+        <p>Libretas ecológicas hechas a mano con materiales reciclados.</p>
+      </div>
+      <nav aria-label="Enlaces del pie de página">
+        <a href="../Index.html">Inicio</a>
+        <a href="Catalogo.html">Catálogo</a>
+        <a href="../Index.html#contacto">Contacto</a>
+        <a class="instagram-link" href="https://www.instagram.com/" target="_blank" rel="noopener">Instagram</a>
+      </nav>
+    </div>
+    <p class="copyright">© <span data-year></span> Libretas Roca. Todos los derechos reservados.</p>
+  </footer>
+</body>
+</html>
