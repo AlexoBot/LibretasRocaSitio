@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Panel de administración de Libretas Roca." />
+  <meta name="theme-color" content="#D9454C" />
+  <title>Admin | Libretas Roca</title>
+  <link rel="icon" href="../Fotos/Logo.jpg" type="image/jpeg" />
+  <link rel="stylesheet" href="../Styles.css" />
+  <script defer src="../admin.js"></script>
+</head>
+<body data-page="admin" data-asset-prefix="../">
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+  <header class="site-header" data-header>
+    <nav class="navbar container" aria-label="Navegación principal">
+      <a class="brand" href="../Index.html" aria-label="Ir al inicio de Libretas Roca">
+        <img class="brand-mark" src="../Fotos/Logo.jpg" alt="Libretas Roca logo" />
+        <span>
+          <strong>Libretas Roca</strong>
+          <small>hechas a mano</small>
+        </span>
+      </a>
+      <button class="btn btn-ghost" type="button" data-sign-out>Salir</button>
+    </nav>
+  </header>
+
+  <main id="contenido">
+    <section class="section-pad">
+      <div class="container">
+        <div class="section-heading reveal">
+          <p class="eyebrow">Panel administrativo</p>
+          <h1>Gestiona cuadernos directamente en la base de datos</h1>
+          <p>Agrega nuevos modelos, sube portada y elimina artículos existentes sin editar archivos locales.</p>
+        </div>
+
+        <div class="admin-grid">
+          <form class="contact-form reveal" data-admin-form>
+            <label>
+              Nombre del modelo
+              <input type="text" name="nombre" placeholder="Nombre del cuaderno" required />
+            </label>
+            <label>
+              Categoría
+              <select name="categoria" required>
+                <option value="notas">Notas</option>
+                <option value="agenda">Agenda</option>
+                <option value="dibujo">Dibujo</option>
+                <option value="regalo">Regalo</option>
+              </select>
+            </label>
+            <label>
+              Etiqueta
+              <input type="text" name="etiqueta" placeholder="Etiqueta visible" required />
+            </label>
+            <label>
+              Formato
+              <input type="text" name="formato" placeholder="Ej. 140x210 mm" />
+            </label>
+            <label>
+              Descripción
+              <textarea name="descripcion" rows="5" placeholder="Descripción del modelo" required></textarea>
+            </label>
+            <label>
+              Portada
+              <input type="file" name="imagen" accept="image/*" />
+            </label>
+            <button class="btn btn-primary" type="submit">Guardar modelo</button>
+            <p class="form-note" data-admin-message></p>
+          </form>
+
+          <section class="admin-list reveal">
+            <div class="section-heading">
+              <p class="eyebrow">Modelos existentes</p>
+              <h2>Lista de cuadernos</h2>
+            </div>
+            <div id="adminItemList"></div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <a class="brand footer-brand" href="../Index.html">
+          <img class="brand-mark" src="../Fotos/Logo.jpg" alt="Libretas Roca logo" />
+          <span><strong>Libretas Roca</strong><small>hechas a mano</small></span>
+        </a>
+        <p>Libretas ecológicas hechas a mano con materiales reciclados.</p>
+      </div>
+      <nav aria-label="Enlaces del pie de página">
+        <a href="../Index.html">Inicio</a>
+        <a href="Catalogo.html">Catálogo</a>
+      </nav>
+    </div>
+    <p class="copyright">© <span data-year></span> Libretas Roca. Todos los derechos reservados.</p>
+  </footer>
+</body>
+</html>

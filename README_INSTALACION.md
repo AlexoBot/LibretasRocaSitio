@@ -58,16 +58,9 @@ Guarda tus fotos dentro de:
 Fotos/Modelos/
 ```
 
-Después actualiza el arreglo `PRODUCTOS` en `Scripts.js` con el nombre del archivo correcto.
+Para agregar nuevos modelos, usa el panel administrativo desde `Paginas/Login.html` y sube las portadas desde la interfaz.
 
-Ejemplo:
-
-```js
-{
-  nombre: "Modelo Primavera",
-  categoria: "regalo",
-  etiqueta: "Regalo",
-  imagen: "modelo-primavera.jpg",
+Si deseas cambiar solo la imagen de una libreta existente, usa el administrador y actualiza el registro en la base de datos.
   descripcion: "Libreta artesanal con portada floral y hojas recicladas."
 }
 ```
@@ -83,4 +76,11 @@ El dominio `libretasroca.com` debe apuntar a la carpeta donde esté `index.html`
 - Es un sitio estático: no necesita base de datos.
 - El formulario abre la aplicación de correo del visitante usando `mailto:`.
 - Para recibir formularios directamente desde la web se puede conectar Formspree, Netlify Forms, EmailJS o un backend propio.
+
+Variables de entorno para administración:
+- `ADMIN_EMAIL`: correo administrador.
+- `ADMIN_PASSWORD`: contraseña administrador.
+- `ADMIN_AUTH_SECRET`: secreto para firmar tokens.
+
+Crea un archivo `.env` a partir de `.env.example` y configura esos valores en tu entorno de desarrollo o en Netlify.
 - El catálogo se edita desde `Scripts.js`; no requiere CMS.

@@ -156,7 +156,7 @@ code {
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 46px;
+  width: 80px;
   height: 46px;
   border-radius: 16px;
   background: var(--accent);
@@ -516,35 +516,63 @@ h3 {
 }
 
 .contact-form input,
-.contact-form textarea {
-  width: 100%;
-  border: 1px solid rgba(47, 38, 32, 0.16);
-  border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.72);
-  color: var(--ink);
-  outline: none;
-  padding: 0.85rem 0.9rem;
-  transition: border-color 180ms ease, box-shadow 180ms ease;
-}
+  .contact-form textarea,
+  .contact-form select {
+    width: 100%;
+    border: 1px solid rgba(47, 38, 32, 0.16);
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--ink);
+    outline: none;
+    padding: 0.85rem 0.9rem;
+    transition: border-color 180ms ease, box-shadow 180ms ease;
+  }
 
-.contact-form input:focus,
-.contact-form textarea:focus {
-  border-color: rgba(217, 69, 76, 0.7);
-  box-shadow: 0 0 0 4px rgba(217, 69, 76, 0.13);
-}
+  .contact-form input:focus,
+  .contact-form textarea:focus,
+  .contact-form select:focus {
+    border-color: rgba(217, 69, 76, 0.7);
+    box-shadow: 0 0 0 4px rgba(217, 69, 76, 0.13);
+  }
 
-.form-note {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.86rem;
-}
+  .form-note {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.86rem;
+  }
 
-.page-hero {
-  padding-bottom: 3rem;
-}
+  .form-note.error {
+    color: var(--accent-dark);
+  }
 
-.page-hero h1 {
-  max-width: 12ch;
+  .admin-grid {
+    display: grid;
+    gap: 2rem;
+  }
+
+  .admin-card {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--paper);
+    padding: 1.25rem;
+    display: grid;
+    gap: 1rem;
+  }
+
+  .admin-card-content {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .admin-card img {
+    width: 100%;
+    max-height: 240px;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+  }
+
+  .admin-delete {
+    justify-self: start;
 }
 
 .catalog-note {
@@ -884,7 +912,7 @@ h3 {
   }
 
   .brand-mark {
-    width: 42px;
+    width: 72px;
     height: 42px;
   }
 }

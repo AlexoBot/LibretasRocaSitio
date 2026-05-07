@@ -4,67 +4,43 @@
   Para personalizar rápido:
   1. Cambia INSTAGRAM_URL por el perfil real de Instagram.
   2. Cambia CONTACT_EMAIL por el correo real.
-  3. Edita PRODUCTOS para agregar, quitar o modificar modelos del catálogo.
+  3. Agrega nuevos modelos desde el panel administrativo; el catálogo se carga desde la base de datos.
 */
 
 const INSTAGRAM_URL = "https://www.instagram.com/libretasecologicasroca/";
 const CONTACT_EMAIL = "contacto@libretasroca.com";
 
-const PRODUCTOS = [
-  {
-    nombre: "Mariposas Negras",
-    categoria: "notas",
-    etiqueta: "Notas",
-    imagen: "Margaritas Negras.jpg",
-    descripcion: "Libreta artesanal de uso diario, ideal para notas, listas, journaling y proyectos personales. Portada resistente con acabado cálido."
-  },
-  {
-    nombre: "Botánica",
-    categoria: "regalo",
-    etiqueta: "Regalo",
-    imagen: "libreta-botanica.svg",
-    descripcion: "Diseño inspirado en hojas, flores y tonos naturales. Una opción especial para regalar o conservar como libreta personal."
-  },
-  {
-    nombre: "Minimal",
-    categoria: "notas",
-    etiqueta: "Notas",
-    imagen: "libreta-minimal.svg",
-    descripcion: "Modelo limpio y versátil, pensado para quienes prefieren una estética sobria con materiales recuperados."
-  },
-  {
-    nombre: "Artista",
-    categoria: "dibujo",
-    etiqueta: "Dibujo",
-    imagen: "libreta-artista.svg",
-    descripcion: "Libreta pensada para bocetos, lettering, ideas visuales y notas creativas. Se puede adaptar con hojas lisas o mixtas."
-  },
-  {
-    nombre: "Agenda Roca",
-    categoria: "agenda",
-    etiqueta: "Agenda",
-    imagen: "libreta-agenda.svg",
-    descripcion: "Formato útil para organizar semanas, proyectos y pendientes. Ideal para estudiantes, oficina o planeación personal."
-  },
-  {
-    nombre: "Edición Retazos",
-    categoria: "regalo",
-    etiqueta: "Regalo",
-    imagen: "libreta-retazos.svg",
-    descripcion: "Modelo con portada elaborada a partir de retazos y materiales reciclados. Cada pieza puede variar ligeramente."
-  },
-  {
-    nombre: "Edición Retazos",
-    categoria: "regalo",
-    etiqueta: "Regalo",
-    imagen: "libreta-retazos.svg",
-    descripcion: "Modelo con portada elaborada a partir de retazos y materiales reciclados. Cada pieza puede variar ligeramente."
-  }
-];
-
+let catalogItems = [];
 const body = document.body;
 const assetPrefix = body.dataset.assetPrefix || "";
 const page = body.dataset.page || "home";
+const apiBase = `${assetPrefix}api`;
+
+function productImagePath(product) {
+  if (product?.imagen_key) {
+    return `${apiBase}/get-image?key=${encodeURIComponent(product.imagen_key)}`;
+  }
+  return `${assetPrefix}Fotos/Modelos/libreta-minimal.svg`;
+}
+
+async function fetchCatalogItems() {
+  try {
+    const response = await fetch(`${apiBase}/items`);
+    if (!response.ok) {
+      throw new Error(`Error al cargar catálogo: ${response.status}`);
+    }
+
+    const items = await response.json();
+    if (!Array.isArray(items)) {
+      throw new Error("Respuesta de catálogo inválida");
+    }
+
+    catalogItems = items;
+  } catch (error) {
+    console.error(error);
+    catalogItems = [];
+  }
+}
 
 function initHeader() {
   const header = document.querySelector("[data-header]");
@@ -131,10 +107,6 @@ function initRevealAnimations() {
   elements.forEach((element) => observer.observe(element));
 }
 
-function productImagePath(product) {
-  return `${assetPrefix}Fotos/Modelos/${product.imagen}`;
-}
-
 function createProductCard(product, index) {
   const button = document.createElement("button");
   button.className = "catalog-card reveal is-visible";
@@ -159,11 +131,11 @@ function renderCatalog(filter = "todos") {
   catalogGrid.innerHTML = "";
 
   const filteredProducts = filter === "todos"
-    ? PRODUCTOS
-    : PRODUCTOS.filter((product) => product.categoria === filter);
+    ? catalogItems
+    : catalogItems.filter((product) => product.categoria === filter);
 
   filteredProducts.forEach((product) => {
-    const originalIndex = PRODUCTOS.indexOf(product);
+    const originalIndex = catalogItems.indexOf(product);
     catalogGrid.appendChild(createProductCard(product, originalIndex));
   });
 
@@ -174,10 +146,11 @@ function renderCatalog(filter = "todos") {
   }
 }
 
-function initCatalogFilters() {
+async function initCatalogFilters() {
   if (page !== "catalog") return;
 
   const filterButtons = document.querySelectorAll("[data-filter]");
+  await fetchCatalogItems();
   renderCatalog();
 
   filterButtons.forEach((button) => {
@@ -218,7 +191,7 @@ function initCatalogModal() {
   catalogGrid.addEventListener("click", (event) => {
     const card = event.target.closest("[data-product-index]");
     if (!card) return;
-    const product = PRODUCTOS[Number(card.dataset.productIndex)];
+    const product = catalogItems[Number(card.dataset.productIndex)];
     if (product) openModal(product);
   });
 

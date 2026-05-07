@@ -1,5 +1,6 @@
 import { getDatabase } from "@netlify/database";
 import { getStore } from "@netlify/blobs";
+import { requireAuth } from "./auth.js";
 
 const db = getDatabase();
 
@@ -19,6 +20,12 @@ export default async (req, context) => {
   }
 
   if (req.method === "PUT") {
+    try {
+      requireAuth(req);
+    } catch (error) {
+      return Response.json({ error: error.message }, { status: 401 });
+    }
+
     const body = await req.json();
     const { nombre, categoria, etiqueta, formato, descripcion, imagen_key } = body;
 
@@ -42,6 +49,12 @@ export default async (req, context) => {
   }
 
   if (req.method === "DELETE") {
+    try {
+      requireAuth(req);
+    } catch (error) {
+      return Response.json({ error: error.message }, { status: 401 });
+    }
+
     const [item] = await db.sql`SELECT imagen_key FROM items WHERE id = ${id}`;
     if (!item) {
       return Response.json({ error: "Item no encontrado" }, { status: 404 });

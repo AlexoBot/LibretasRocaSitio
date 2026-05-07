@@ -1,4 +1,5 @@
 import { getStore } from "@netlify/blobs";
+import { requireAuth } from "./auth.js";
 
 const ALLOWED_MIME_TYPES = {
   "image/jpeg": "jpg",
@@ -11,6 +12,12 @@ const ALLOWED_MIME_TYPES = {
 export default async (req) => {
   if (req.method !== "POST") {
     return new Response("Método no permitido", { status: 405 });
+  }
+
+  try {
+    requireAuth(req);
+  } catch (error) {
+    return Response.json({ error: error.message }, { status: 401 });
   }
 
   const contentType = req.headers.get("content-type") || "";
