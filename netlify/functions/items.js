@@ -1,5 +1,6 @@
 import { getDatabase } from "@netlify/database";
 import { requireAuth } from "./auth.js";
+import { normalizeItemPayload, validateItemPayload } from "./item-schema.js";
 
 const db = getDatabase();
 
@@ -16,19 +17,27 @@ export default async (req) => {
       return Response.json({ error: error.message }, { status: 401 });
     }
 
-    const body = await req.json();
-    const { nombre, categoria, etiqueta, formato, descripcion, imagen_key } = body;
+    const body = await req.json().catch(() => null);
 
-    if (!nombre) {
+    if (!body) {
       return Response.json(
-        { error: "El campo 'nombre' es obligatorio" },
+        { error: "Cuerpo de solicitud inválido" },
         { status: 400 }
       );
     }
 
+    const itemData = normalizeItemPayload(body);
+    const validationError = validateItemPayload(itemData);
+
+    if (validationError) {
+      return Response.json({ error: validationError }, { status: 400 });
+    }
+
+    const { nombre, categoria, papel, formato, encuadernado, descripcion, imagen_key } = itemData;
+
     const [item] = await db.sql`
-      INSERT INTO items (nombre, categoria, etiqueta, formato, descripcion, imagen_key)
-      VALUES (${nombre}, ${categoria ?? null}, ${etiqueta ?? null}, ${formato ?? null}, ${descripcion ?? null}, ${imagen_key ?? null})
+      INSERT INTO items (nombre, categoria, papel, formato, encuadernado, descripcion, imagen_key)
+      VALUES (${nombre}, ${categoria}, ${papel}, ${formato}, ${encuadernado}, ${descripcion}, ${imagen_key})
       RETURNING *
     `;
 

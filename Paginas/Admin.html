@@ -30,8 +30,8 @@
     <section class="section-pad">
       <div class="container">
         <div class="section-heading reveal">
-          <p class="eyebrow">Panel administrativo</p>
-          <h1>Gestiona cuadernos directamente en la base de datos</h1>
+          <p class="eyebrow">Panel administrativo (hola madre)</p>
+          <h2>Gestiona libretas directamente en la base de datos</h2>
           <p>Agrega nuevos modelos, sube portada y elimina artículos existentes sin editar archivos locales.</p>
         </div>
 
@@ -39,7 +39,7 @@
           <form class="contact-form reveal" data-admin-form>
             <label>
               Nombre del modelo
-              <input type="text" name="nombre" placeholder="Nombre del cuaderno" required />
+              <input type="text" name="nombre" placeholder="Nombre del modelo" required />
             </label>
             <label>
               Categoría
@@ -51,12 +51,33 @@
               </select>
             </label>
             <label>
-              Etiqueta
-              <input type="text" name="etiqueta" placeholder="Etiqueta visible" required />
+              Papel
+              <select name="papel" required>
+                <option value="Blanco">Blanco</option>
+                <option value="Liso">Liso</option>
+                <option value="Rayado">Rayado</option>
+                <option value="Punteado">Punteado</option>
+                <option value="Negro">Negro</option>
+                <option value="Colores">Colores</option>
+              </select>
             </label>
             <label>
               Formato
-              <input type="text" name="formato" placeholder="Ej. 140x210 mm" />
+              <select name="formato" required>
+                <option value="Vertical">Vertical</option>
+                <option value="Horizontal">Horizontal</option>
+                <option value="Profesional">Profesional</option>
+                <option value="Bolsillo">Bolsillo</option>
+                <option value="Mini">Mini</option>
+              </select>
+            </label>
+            <label>
+              Encuadernado
+              <select name="encuadernado" required>
+                <option value="Pasta Dura">Pasta Dura</option>
+                <option value="Espiral">Espiral</option>
+                <option value="Block">Block</option>
+              </select>
             </label>
             <label>
               Descripción
@@ -73,7 +94,7 @@
           <section class="admin-list reveal">
             <div class="section-heading">
               <p class="eyebrow">Modelos existentes</p>
-              <h2>Lista de cuadernos</h2>
+              <h2>Lista de libretas</h2>
             </div>
             <div id="adminItemList"></div>
           </section>

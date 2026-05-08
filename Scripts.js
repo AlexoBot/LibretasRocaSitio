@@ -15,6 +15,20 @@ const body = document.body;
 const assetPrefix = body.dataset.assetPrefix || "";
 const page = body.dataset.page || "home";
 const apiBase = `${assetPrefix}api`;
+const CATEGORY_LABELS = {
+  notas: "Notas",
+  agenda: "Agenda",
+  dibujo: "Dibujo",
+  regalo: "Regalo",
+};
+
+function categoryLabel(category) {
+  return CATEGORY_LABELS[category] || category || "";
+}
+
+function productDetails(product) {
+  return [product.papel, product.formato, product.encuadernado].filter(Boolean).join(" / ");
+}
 
 function productImagePath(product) {
   if (product?.imagen_key) {
@@ -108,17 +122,20 @@ function initRevealAnimations() {
 }
 
 function createProductCard(product, index) {
+  const category = categoryLabel(product.categoria);
+  const details = productDetails(product);
   const button = document.createElement("button");
   button.className = "catalog-card reveal is-visible";
   button.type = "button";
   button.dataset.category = product.categoria;
   button.dataset.productIndex = String(index);
   button.innerHTML = `
-    <img src="${productImagePath(product)}" alt="${product.nombre} - ${product.etiqueta}" loading="lazy">
+    <img src="${productImagePath(product)}" alt="${product.nombre} - ${category}" loading="lazy">
     <div class="catalog-card-body">
-      <span class="catalog-tag">${product.etiqueta}</span>
+      <span class="catalog-tag">${category}</span>
       <h3>${product.nombre}</h3>
       <p>${product.descripcion}</p>
+      ${details ? `<p class="catalog-card-meta">${details}</p>` : ""}
     </div>
   `;
   return button;
@@ -171,6 +188,7 @@ function initCatalogModal() {
   const modalTitle = modal.querySelector("[data-modal-title]");
   const modalCategory = modal.querySelector("[data-modal-category]");
   const modalDescription = modal.querySelector("[data-modal-description]");
+  const modalDetails = modal.querySelector("[data-modal-details]");
   const closeButtons = modal.querySelectorAll("[data-close-modal]");
 
   const closeModal = () => {
@@ -182,8 +200,15 @@ function initCatalogModal() {
     modalImage.src = productImagePath(product);
     modalImage.alt = product.nombre;
     modalTitle.textContent = product.nombre;
-    modalCategory.textContent = product.etiqueta;
+    modalCategory.textContent = categoryLabel(product.categoria);
     modalDescription.textContent = product.descripcion;
+    if (modalDetails) {
+      modalDetails.innerHTML = `
+        <div><dt>Papel</dt><dd>${product.papel || "-"}</dd></div>
+        <div><dt>Formato</dt><dd>${product.formato || "-"}</dd></div>
+        <div><dt>Encuadernado</dt><dd>${product.encuadernado || "-"}</dd></div>
+      `;
+    }
     modal.hidden = false;
     document.body.style.overflow = "hidden";
   };

@@ -650,6 +650,13 @@ h3 {
   letter-spacing: 0.08em;
 }
 
+.catalog-card-meta {
+  margin-top: 0.8rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
 .modal[hidden] {
   display: none;
 }
@@ -692,6 +699,34 @@ h3 {
 
 .modal-content {
   padding: clamp(1.4rem, 4vw, 2.5rem);
+}
+
+.model-details {
+  display: grid;
+  gap: 0.7rem;
+  margin: 1.2rem 0 0;
+}
+
+.model-details div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--line);
+}
+
+.model-details dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.model-details dd {
+  margin: 0;
+  font-weight: 850;
+  text-align: right;
 }
 
 .modal-close {

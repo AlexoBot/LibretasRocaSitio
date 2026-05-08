@@ -1,6 +1,7 @@
 import { getDatabase } from "@netlify/database";
 import { getStore } from "@netlify/blobs";
 import { requireAuth } from "./auth.js";
+import { normalizeItemPayload, validateItemPayload } from "./item-schema.js";
 
 const db = getDatabase();
 
@@ -26,15 +27,31 @@ export default async (req, context) => {
       return Response.json({ error: error.message }, { status: 401 });
     }
 
-    const body = await req.json();
-    const { nombre, categoria, etiqueta, formato, descripcion, imagen_key } = body;
+    const body = await req.json().catch(() => null);
+
+    if (!body) {
+      return Response.json(
+        { error: "Cuerpo de solicitud inválido" },
+        { status: 400 }
+      );
+    }
+
+    const itemData = normalizeItemPayload(body);
+    const validationError = validateItemPayload(itemData, { partial: true });
+
+    if (validationError) {
+      return Response.json({ error: validationError }, { status: 400 });
+    }
+
+    const { nombre, categoria, papel, formato, encuadernado, descripcion, imagen_key } = itemData;
 
     const [item] = await db.sql`
       UPDATE items
       SET nombre      = COALESCE(${nombre ?? null}, nombre),
           categoria   = COALESCE(${categoria ?? null}, categoria),
-          etiqueta    = COALESCE(${etiqueta ?? null}, etiqueta),
+          papel       = COALESCE(${papel ?? null}, papel),
           formato     = COALESCE(${formato ?? null}, formato),
+          encuadernado = COALESCE(${encuadernado ?? null}, encuadernado),
           descripcion = COALESCE(${descripcion ?? null}, descripcion),
           imagen_key  = COALESCE(${imagen_key ?? null}, imagen_key)
       WHERE id = ${id}

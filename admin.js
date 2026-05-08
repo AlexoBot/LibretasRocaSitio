@@ -3,6 +3,20 @@ const assetPrefix = body.dataset.assetPrefix || "";
 const page = body.dataset.page || "";
 const apiBase = `${assetPrefix}api`;
 const AUTH_TOKEN_KEY = "libretasroca_admin_token";
+const CATEGORY_LABELS = {
+  notas: "Notas",
+  agenda: "Agenda",
+  dibujo: "Dibujo",
+  regalo: "Regalo",
+};
+
+function categoryLabel(category) {
+  return CATEGORY_LABELS[category] || category || "-";
+}
+
+function displayValue(value) {
+  return value || "-";
+}
 
 function getToken() {
   return localStorage.getItem(AUTH_TOKEN_KEY);
@@ -107,8 +121,10 @@ function renderAdminItems(items = []) {
             <div>
               <h3>${item.nombre}</h3>
               <p>${item.descripcion || "Sin descripción"}</p>
-              <p><strong>Categoría:</strong> ${item.categoria || "-"}</p>
-              <p><strong>Etiqueta:</strong> ${item.etiqueta || "-"}</p>
+              <p><strong>Categoría:</strong> ${categoryLabel(item.categoria)}</p>
+              <p><strong>Papel:</strong> ${displayValue(item.papel)}</p>
+              <p><strong>Formato:</strong> ${displayValue(item.formato)}</p>
+              <p><strong>Encuadernado:</strong> ${displayValue(item.encuadernado)}</p>
             </div>
           </div>
           <button class="btn btn-ghost admin-delete" type="button" data-delete-id="${item.id}">Eliminar</button>
@@ -248,13 +264,14 @@ function initAdminPage() {
     const formData = new FormData(form);
     const nombre = formData.get("nombre")?.toString().trim();
     const categoria = formData.get("categoria")?.toString().trim();
-    const etiqueta = formData.get("etiqueta")?.toString().trim();
+    const papel = formData.get("papel")?.toString().trim();
     const formato = formData.get("formato")?.toString().trim();
+    const encuadernado = formData.get("encuadernado")?.toString().trim();
     const descripcion = formData.get("descripcion")?.toString().trim();
     const imagenFile = formData.get("imagen");
 
     try {
-      if (!nombre || !categoria || !etiqueta || !descripcion) {
+      if (!nombre || !categoria || !papel || !formato || !encuadernado || !descripcion) {
         throw new Error("Completa todos los campos obligatorios");
       }
 
@@ -266,8 +283,9 @@ function initAdminPage() {
       await createModel({
         nombre,
         categoria,
-        etiqueta,
+        papel,
         formato,
+        encuadernado,
         descripcion,
         imagen_key,
       });
