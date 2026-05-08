@@ -37,6 +37,10 @@
 
         <div class="admin-grid">
           <form class="contact-form reveal" data-admin-form>
+            <div class="admin-form-heading">
+              <h2 data-admin-form-title>Nuevo modelo</h2>
+              <p data-admin-form-note>Registra una libreta nueva en el catálogo.</p>
+            </div>
             <label>
               Nombre del modelo
               <input type="text" name="nombre" placeholder="Nombre del modelo" required />
@@ -87,14 +91,21 @@
               Portada
               <input type="file" name="imagen" accept="image/*" />
             </label>
-            <button class="btn btn-primary" type="submit">Guardar modelo</button>
+            <div class="admin-image-preview" data-admin-image-preview hidden>
+              <img data-admin-image src="" alt="Portada actual" />
+              <span data-admin-image-label>Portada actual</span>
+            </div>
+            <div class="admin-form-actions">
+              <button class="btn btn-primary" type="submit" data-admin-submit>Guardar modelo</button>
+              <button class="btn btn-ghost" type="button" data-cancel-edit hidden>Cancelar edición</button>
+            </div>
             <p class="form-note" data-admin-message></p>
           </form>
 
           <section class="admin-list reveal">
             <div class="section-heading">
               <p class="eyebrow">Modelos existentes</p>
-              <h2>Lista de libretas</h2>
+              <h2>Selecciona una libreta</h2>
             </div>
             <div id="adminItemList"></div>
           </section>

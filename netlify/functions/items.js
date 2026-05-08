@@ -1,11 +1,10 @@
-import { getDatabase } from "@netlify/database";
 import { requireAuth } from "./auth.js";
 import { normalizeItemPayload, validateItemPayload } from "./item-schema.js";
-
-const db = getDatabase();
+import { db, ensureItemsTable } from "./item-table.js";
 
 export default async (req) => {
   if (req.method === "GET") {
+    await ensureItemsTable();
     const items = await db.sql`SELECT * FROM items ORDER BY id`;
     return Response.json([...items]);
   }
@@ -35,13 +34,23 @@ export default async (req) => {
 
     const { nombre, categoria, papel, formato, encuadernado, descripcion, imagen_key } = itemData;
 
-    const [item] = await db.sql`
-      INSERT INTO items (nombre, categoria, papel, formato, encuadernado, descripcion, imagen_key)
-      VALUES (${nombre}, ${categoria}, ${papel}, ${formato}, ${encuadernado}, ${descripcion}, ${imagen_key})
-      RETURNING *
-    `;
+    try {
+      await ensureItemsTable();
 
-    return Response.json(item, { status: 201 });
+      const [item] = await db.sql`
+        INSERT INTO items (nombre, categoria, papel, formato, encuadernado, descripcion, imagen_key)
+        VALUES (${nombre}, ${categoria}, ${papel}, ${formato}, ${encuadernado}, ${descripcion}, ${imagen_key})
+        RETURNING *
+      `;
+
+      return Response.json(item, { status: 201 });
+    } catch (error) {
+      console.error("No se pudo guardar el modelo", error);
+      return Response.json(
+        { error: "No se pudo guardar el modelo en la base de datos" },
+        { status: 500 }
+      );
+    }
   }
 
   return new Response("Método no permitido", { status: 405 });

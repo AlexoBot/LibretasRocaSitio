@@ -3,6 +3,8 @@ const assetPrefix = body.dataset.assetPrefix || "";
 const page = body.dataset.page || "";
 const apiBase = `${assetPrefix}api`;
 const AUTH_TOKEN_KEY = "libretasroca_admin_token";
+let adminItems = [];
+let editingItemId = null;
 const CATEGORY_LABELS = {
   notas: "Notas",
   agenda: "Agenda",
@@ -14,8 +16,17 @@ function categoryLabel(category) {
   return CATEGORY_LABELS[category] || category || "-";
 }
 
-function displayValue(value) {
-  return value || "-";
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function findItemById(itemId) {
+  return adminItems.find((item) => String(item.id) === String(itemId));
 }
 
 function getToken() {
@@ -114,20 +125,21 @@ function renderAdminItems(items = []) {
 
   list.innerHTML = items
     .map((item) => {
+      const isSelected = String(item.id) === String(editingItemId);
+      const category = categoryLabel(item.categoria);
+      const details = [category, item.papel, item.formato, item.encuadernado].filter(Boolean).join(" / ");
+
       return `
-        <article class="admin-card">
-          <div class="admin-card-content">
-            <img src="${resolveItemImage(item)}" alt="${item.nombre}" />
-            <div>
-              <h3>${item.nombre}</h3>
-              <p>${item.descripcion || "Sin descripción"}</p>
-              <p><strong>Categoría:</strong> ${categoryLabel(item.categoria)}</p>
-              <p><strong>Papel:</strong> ${displayValue(item.papel)}</p>
-              <p><strong>Formato:</strong> ${displayValue(item.formato)}</p>
-              <p><strong>Encuadernado:</strong> ${displayValue(item.encuadernado)}</p>
+        <article class="admin-card${isSelected ? " is-selected" : ""}">
+          <button class="admin-item-button" type="button" data-edit-id="${escapeHtml(item.id)}" aria-label="Editar ${escapeHtml(item.nombre || "modelo")}">
+            <img src="${escapeHtml(resolveItemImage(item))}" alt="${escapeHtml(item.nombre)}" />
+            <div class="admin-card-content">
+              <h3>${escapeHtml(item.nombre)}</h3>
+              <p class="admin-card-description">${escapeHtml(item.descripcion || "Sin descripción")}</p>
+              <p class="admin-card-meta">${escapeHtml(details || "-")}</p>
             </div>
-          </div>
-          <button class="btn btn-ghost admin-delete" type="button" data-delete-id="${item.id}">Eliminar</button>
+          </button>
+          <button class="btn btn-ghost admin-delete" type="button" data-delete-id="${escapeHtml(item.id)}">Eliminar</button>
         </article>
       `;
     })
@@ -183,16 +195,131 @@ async function createModel(itemData) {
   return response.json();
 }
 
+async function updateModel(itemId, itemData) {
+  const response = await fetch(`${apiBase}/items/${itemId}`, {
+    method: "PUT",
+    headers: {
+      ...getAuthHeaders(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(itemData),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || "No se pudo actualizar el modelo");
+  }
+
+  return response.json();
+}
+
 async function loadAdminItems() {
   const message = document.querySelector("[data-admin-message]");
   try {
-    const items = await fetchItems();
-    renderAdminItems(items);
+    adminItems = await fetchItems();
+    if (editingItemId && !findItemById(editingItemId)) {
+      editingItemId = null;
+    }
+    renderAdminItems(adminItems);
     setMessage(message, "", "info");
   } catch (error) {
+    adminItems = [];
     renderAdminItems([]);
     setMessage(message, error.message, "error");
   }
+}
+
+function setSelectValue(form, name, value, fallback) {
+  const field = form.elements[name];
+  if (!field) return;
+
+  field.value = value || fallback;
+  if (!field.value) {
+    field.value = fallback;
+  }
+}
+
+function getFormItemData(form) {
+  const formData = new FormData(form);
+  return {
+    nombre: formData.get("nombre")?.toString().trim(),
+    categoria: formData.get("categoria")?.toString().trim(),
+    papel: formData.get("papel")?.toString().trim(),
+    formato: formData.get("formato")?.toString().trim(),
+    encuadernado: formData.get("encuadernado")?.toString().trim(),
+    descripcion: formData.get("descripcion")?.toString().trim(),
+  };
+}
+
+function validateAdminItemData(itemData) {
+  const requiredValues = [
+    itemData.nombre,
+    itemData.categoria,
+    itemData.papel,
+    itemData.formato,
+    itemData.encuadernado,
+    itemData.descripcion,
+  ];
+
+  if (requiredValues.some((value) => !value)) {
+    throw new Error("Completa todos los campos obligatorios");
+  }
+}
+
+function updateAdminImagePreview(item = null) {
+  const preview = document.querySelector("[data-admin-image-preview]");
+  const image = document.querySelector("[data-admin-image]");
+  const label = document.querySelector("[data-admin-image-label]");
+  if (!preview || !image || !label) return;
+
+  if (!item) {
+    preview.hidden = true;
+    image.removeAttribute("src");
+    return;
+  }
+
+  image.src = resolveItemImage(item);
+  image.alt = `Portada de ${item.nombre}`;
+  label.textContent = item.imagen_key ? "Portada actual" : "Sin portada subida";
+  preview.hidden = false;
+}
+
+function setCreateMode(form) {
+  const title = document.querySelector("[data-admin-form-title]");
+  const note = document.querySelector("[data-admin-form-note]");
+  const submit = document.querySelector("[data-admin-submit]");
+  const cancel = document.querySelector("[data-cancel-edit]");
+
+  editingItemId = null;
+  form.reset();
+  title.textContent = "Nuevo modelo";
+  note.textContent = "Registra una libreta nueva en el catálogo.";
+  submit.textContent = "Guardar modelo";
+  cancel.hidden = true;
+  updateAdminImagePreview(null);
+  renderAdminItems(adminItems);
+}
+
+function setEditMode(form, item) {
+  const title = document.querySelector("[data-admin-form-title]");
+  const note = document.querySelector("[data-admin-form-note]");
+  const submit = document.querySelector("[data-admin-submit]");
+  const cancel = document.querySelector("[data-cancel-edit]");
+
+  editingItemId = String(item.id);
+  form.elements.nombre.value = item.nombre || "";
+  setSelectValue(form, "categoria", item.categoria, "notas");
+  setSelectValue(form, "papel", item.papel, "Blanco");
+  setSelectValue(form, "formato", item.formato, "Vertical");
+  setSelectValue(form, "encuadernado", item.encuadernado, "Pasta Dura");
+  form.elements.descripcion.value = item.descripcion || "";
+  form.elements.imagen.value = "";
+  title.textContent = "Editar modelo";
+  note.textContent = item.nombre || "Modelo seleccionado";
+  submit.textContent = "Actualizar modelo";
+  cancel.hidden = false;
+  updateAdminImagePreview(item);
+  renderAdminItems(adminItems);
 }
 
 function initLoginPage() {
@@ -230,6 +357,7 @@ function initAdminPage() {
   const form = document.querySelector("[data-admin-form]");
   const message = document.querySelector("[data-admin-message]");
   const signOutButton = document.querySelector("[data-sign-out]");
+  const cancelEditButton = document.querySelector("[data-cancel-edit]");
   const itemList = document.getElementById("adminItemList");
 
   if (!form || !itemList) return;
@@ -244,17 +372,42 @@ function initAdminPage() {
   });
 
   itemList.addEventListener("click", async (event) => {
-    const button = event.target.closest("[data-delete-id]");
-    if (!button) return;
-    const itemId = button.dataset.deleteId;
+    const deleteButton = event.target.closest("[data-delete-id]");
+    if (deleteButton) {
+      event.preventDefault();
+      const itemId = deleteButton.dataset.deleteId;
 
-    try {
-      await deleteItem(itemId);
-      await loadAdminItems();
-      setMessage(message, "Modelo eliminado correctamente", "info");
-    } catch (error) {
-      setMessage(message, error.message, "error");
+      try {
+        deleteButton.disabled = true;
+        deleteButton.textContent = "Eliminando...";
+        await deleteItem(itemId);
+        if (String(itemId) === String(editingItemId)) {
+          setCreateMode(form);
+        }
+        await loadAdminItems();
+        setMessage(message, "Modelo eliminado correctamente", "info");
+      } catch (error) {
+        deleteButton.disabled = false;
+        deleteButton.textContent = "Eliminar";
+        setMessage(message, error.message, "error");
+      }
+      return;
     }
+
+    const editButton = event.target.closest("[data-edit-id]");
+    if (editButton) {
+      const item = findItemById(editButton.dataset.editId);
+      if (!item) return;
+
+      setEditMode(form, item);
+      setMessage(message, "", "info");
+      form.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  });
+
+  cancelEditButton?.addEventListener("click", () => {
+    setCreateMode(form);
+    setMessage(message, "", "info");
   });
 
   form.addEventListener("submit", async (event) => {
@@ -262,37 +415,37 @@ function initAdminPage() {
     setMessage(message, "", "info");
 
     const formData = new FormData(form);
-    const nombre = formData.get("nombre")?.toString().trim();
-    const categoria = formData.get("categoria")?.toString().trim();
-    const papel = formData.get("papel")?.toString().trim();
-    const formato = formData.get("formato")?.toString().trim();
-    const encuadernado = formData.get("encuadernado")?.toString().trim();
-    const descripcion = formData.get("descripcion")?.toString().trim();
+    const itemData = getFormItemData(form);
     const imagenFile = formData.get("imagen");
 
     try {
-      if (!nombre || !categoria || !papel || !formato || !encuadernado || !descripcion) {
-        throw new Error("Completa todos los campos obligatorios");
-      }
+      validateAdminItemData(itemData);
 
-      let imagen_key = null;
       if (imagenFile && imagenFile.size > 0) {
-        imagen_key = await uploadImage(imagenFile);
+        itemData.imagen_key = await uploadImage(imagenFile);
       }
 
-      await createModel({
-        nombre,
-        categoria,
-        papel,
-        formato,
-        encuadernado,
-        descripcion,
-        imagen_key,
-      });
+      if (editingItemId) {
+        const currentEditingId = editingItemId;
+        await updateModel(currentEditingId, itemData);
+        await loadAdminItems();
 
-      form.reset();
-      await loadAdminItems();
-      setMessage(message, "Modelo creado correctamente", "info");
+        const updatedItem = findItemById(currentEditingId);
+        if (updatedItem) {
+          setEditMode(form, updatedItem);
+        }
+
+        setMessage(message, "Modelo actualizado correctamente", "info");
+      } else {
+        await createModel({
+          ...itemData,
+          imagen_key: itemData.imagen_key || null,
+        });
+
+        setCreateMode(form);
+        await loadAdminItems();
+        setMessage(message, "Modelo creado correctamente", "info");
+      }
     } catch (error) {
       setMessage(message, error.message, "error");
     }

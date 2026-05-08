@@ -1,9 +1,7 @@
-import { getDatabase } from "@netlify/database";
 import { getStore } from "@netlify/blobs";
 import { requireAuth } from "./auth.js";
 import { normalizeItemPayload, validateItemPayload } from "./item-schema.js";
-
-const db = getDatabase();
+import { db, ensureItemsTable } from "./item-table.js";
 
 export default async (req, context) => {
   const id = parseInt(context.params.id, 10);
@@ -13,6 +11,7 @@ export default async (req, context) => {
   }
 
   if (req.method === "GET") {
+    await ensureItemsTable();
     const [item] = await db.sql`SELECT * FROM items WHERE id = ${id}`;
     if (!item) {
       return Response.json({ error: "Item no encontrado" }, { status: 404 });
@@ -44,6 +43,13 @@ export default async (req, context) => {
     }
 
     const { nombre, categoria, papel, formato, encuadernado, descripcion, imagen_key } = itemData;
+    await ensureItemsTable();
+
+    const [previousItem] = await db.sql`SELECT imagen_key FROM items WHERE id = ${id}`;
+
+    if (!previousItem) {
+      return Response.json({ error: "Item no encontrado" }, { status: 404 });
+    }
 
     const [item] = await db.sql`
       UPDATE items
@@ -58,8 +64,11 @@ export default async (req, context) => {
       RETURNING *
     `;
 
-    if (!item) {
-      return Response.json({ error: "Item no encontrado" }, { status: 404 });
+    if (imagen_key && previousItem.imagen_key && previousItem.imagen_key !== imagen_key) {
+      const store = getStore("item-images");
+      await store.delete(previousItem.imagen_key).catch((error) => {
+        console.error("No se pudo eliminar la imagen anterior", error);
+      });
     }
 
     return Response.json(item);
@@ -72,17 +81,22 @@ export default async (req, context) => {
       return Response.json({ error: error.message }, { status: 401 });
     }
 
+    await ensureItemsTable();
+
     const [item] = await db.sql`SELECT imagen_key FROM items WHERE id = ${id}`;
     if (!item) {
       return Response.json({ error: "Item no encontrado" }, { status: 404 });
     }
 
+    await db.sql`DELETE FROM items WHERE id = ${id}`;
+
     if (item.imagen_key) {
       const store = getStore("item-images");
-      await store.delete(item.imagen_key);
+      await store.delete(item.imagen_key).catch((error) => {
+        console.error("No se pudo eliminar la imagen del modelo eliminado", error);
+      });
     }
 
-    await db.sql`DELETE FROM items WHERE id = ${id}`;
     return new Response(null, { status: 204 });
   }
 
