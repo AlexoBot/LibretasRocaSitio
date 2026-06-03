@@ -9,6 +9,8 @@
 
 const INSTAGRAM_URL = "https://www.instagram.com/libretasecologicasroca/";
 const CONTACT_EMAIL = "contacto@libretasroca.com";
+const CHAT_SESSION_KEY = "libretasroca_chat_session_id";
+const CHAT_DEFAULT_SUGGESTIONS = ["Ver catalogo", "Pedido personalizado", "Contacto"];
 
 let catalogItems = [];
 const body = document.body;
@@ -248,9 +250,241 @@ function initContactForm() {
   });
 }
 
+function getChatSessionId() {
+  const fallbackSessionId = `lr-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  try {
+    const existingSessionId = localStorage.getItem(CHAT_SESSION_KEY);
+    if (existingSessionId) {
+      return existingSessionId;
+    }
+
+    const sessionId = window.crypto?.randomUUID
+      ? `lr-${window.crypto.randomUUID()}`
+      : fallbackSessionId;
+
+    localStorage.setItem(CHAT_SESSION_KEY, sessionId);
+    return sessionId;
+  } catch (error) {
+    console.warn("No se pudo guardar la sesion del chat", error);
+    return fallbackSessionId;
+  }
+}
+
+function createChatIcon() {
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.8 8.8 0 0 1-3.9-.9L3 20.5l1.5-4.4A8.1 8.1 0 0 1 3 11.5C3 6.8 7 3 12 3s9 3.8 9 8.5Z" />
+      <path d="M8 10h8M8 14h5" />
+    </svg>
+  `;
+}
+
+function initChatWidget() {
+  if (!["home", "catalog"].includes(page)) return;
+  if (document.querySelector("[data-chat-widget]")) return;
+
+  const sessionId = getChatSessionId();
+  let isSending = false;
+  let lastFailedMessage = "";
+
+  const widget = document.createElement("div");
+  widget.className = "chat-widget";
+  widget.dataset.chatWidget = "";
+  widget.innerHTML = `
+    <section class="chat-panel" id="libretas-chat-panel" aria-label="Chat de Libretas Roca" hidden>
+      <header class="chat-header">
+        <div>
+          <p class="chat-kicker">Libretas Roca</p>
+          <h2>Asistente de pedidos</h2>
+        </div>
+        <button class="chat-close" type="button" aria-label="Cerrar chat" data-chat-close>&times;</button>
+      </header>
+      <div class="chat-messages" role="log" aria-live="polite" aria-relevant="additions" data-chat-messages></div>
+      <div class="chat-suggestions" data-chat-suggestions></div>
+      <form class="chat-form" data-chat-form>
+        <label class="sr-only" for="chat-message-input">Mensaje para el chat</label>
+        <textarea id="chat-message-input" name="message" rows="1" maxlength="700" placeholder="Pregunta por modelos, materiales o pedidos" data-chat-input></textarea>
+        <button class="chat-send" type="submit" aria-label="Enviar mensaje" data-chat-send>Enviar</button>
+      </form>
+      <p class="chat-status" role="status" aria-live="polite" data-chat-status></p>
+    </section>
+    <button class="chat-bubble" type="button" aria-label="Abrir chat" aria-controls="libretas-chat-panel" aria-expanded="false" data-chat-toggle>
+      ${createChatIcon()}
+    </button>
+  `;
+
+  document.body.appendChild(widget);
+
+  const panel = widget.querySelector(".chat-panel");
+  const toggle = widget.querySelector("[data-chat-toggle]");
+  const closeButton = widget.querySelector("[data-chat-close]");
+  const form = widget.querySelector("[data-chat-form]");
+  const input = widget.querySelector("[data-chat-input]");
+  const sendButton = widget.querySelector("[data-chat-send]");
+  const messages = widget.querySelector("[data-chat-messages]");
+  const suggestions = widget.querySelector("[data-chat-suggestions]");
+  const status = widget.querySelector("[data-chat-status]");
+
+  const setStatus = (message = "", type = "info") => {
+    status.textContent = message;
+    status.classList.toggle("error", type === "error");
+  };
+
+  const setOpen = (open) => {
+    panel.hidden = !open;
+    widget.classList.toggle("is-open", open);
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.setAttribute("aria-label", open ? "Cerrar chat" : "Abrir chat");
+
+    if (open) {
+      setTimeout(() => input.focus(), 80);
+    }
+  };
+
+  const setSending = (sending) => {
+    isSending = sending;
+    input.disabled = sending;
+    sendButton.disabled = sending;
+    suggestions.querySelectorAll("button").forEach((button) => {
+      button.disabled = sending;
+    });
+  };
+
+  const appendMessage = (type, text, { loading = false } = {}) => {
+    const message = document.createElement("article");
+    message.className = `chat-message chat-message-${type}`;
+    if (loading) {
+      message.classList.add("is-loading");
+    }
+
+    const bubble = document.createElement("p");
+    bubble.textContent = text;
+    message.appendChild(bubble);
+    messages.appendChild(message);
+    messages.scrollTop = messages.scrollHeight;
+    return message;
+  };
+
+  const renderSuggestions = (items = CHAT_DEFAULT_SUGGESTIONS) => {
+    suggestions.innerHTML = "";
+
+    items
+      .filter(Boolean)
+      .slice(0, 4)
+      .forEach((item) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = item;
+        button.addEventListener("click", () => {
+          const message = item === "Reintentar" && lastFailedMessage
+            ? lastFailedMessage
+            : item;
+          input.value = message;
+          form.requestSubmit();
+        });
+        suggestions.appendChild(button);
+      });
+  };
+
+  const sendMessage = async (message) => {
+    const response = await fetch(`${apiBase}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message,
+        sessionId,
+        page: {
+          type: page,
+          url: window.location.href,
+          title: document.title,
+        },
+      }),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(payload.error || "No pudimos enviar tu mensaje.");
+    }
+
+    if (!payload.reply) {
+      throw new Error("El chat no envio una respuesta valida.");
+    }
+
+    return payload;
+  };
+
+  const submitMessage = async (message) => {
+    if (isSending) return;
+
+    const text = message.trim();
+    if (!text) {
+      setStatus("Escribe una pregunta para iniciar el chat.", "error");
+      input.focus();
+      return;
+    }
+
+    setStatus("");
+    appendMessage("user", text);
+    input.value = "";
+    setSending(true);
+
+    const loadingMessage = appendMessage("bot", "Escribiendo...", { loading: true });
+
+    try {
+      const payload = await sendMessage(text);
+      lastFailedMessage = "";
+      loadingMessage.remove();
+      appendMessage("bot", payload.reply);
+      renderSuggestions(Array.isArray(payload.suggestions) && payload.suggestions.length
+        ? payload.suggestions
+        : CHAT_DEFAULT_SUGGESTIONS);
+    } catch (error) {
+      lastFailedMessage = text;
+      loadingMessage.remove();
+      appendMessage("bot", error.message || "No pudimos conectar con el chat.");
+      setStatus("Puedes reintentar o usar los enlaces de contacto.", "error");
+      renderSuggestions(["Reintentar", "Contacto", "Ver catalogo"]);
+    } finally {
+      setSending(false);
+      input.focus();
+    }
+  };
+
+  appendMessage("bot", "Hola, puedo ayudarte con modelos, materiales y pedidos especiales de Libretas Roca.");
+  renderSuggestions();
+
+  toggle.addEventListener("click", () => setOpen(panel.hidden));
+  closeButton.addEventListener("click", () => {
+    setOpen(false);
+    toggle.focus();
+  });
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    submitMessage(input.value);
+  });
+
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      form.requestSubmit();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !panel.hidden) {
+      setOpen(false);
+      toggle.focus();
+    }
+  });
+}
+
 initHeader();
 initGlobalLinks();
 initRevealAnimations();
 initCatalogFilters();
 initCatalogModal();
 initContactForm();
+initChatWidget();

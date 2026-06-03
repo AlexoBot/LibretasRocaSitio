@@ -10,6 +10,7 @@ A full-stack business website built and deployed for a real small business clien
 
 - **Product Catalog** — SQL database storing all notebook models, descriptions, and images, dynamically rendered on the frontend
 - **Admin Panel** — secure login screen with `.env`-based credential management, allowing the business owner to manage catalog content without touching code
+- **Chatbot Proxy** — public chat widget that calls an n8n workflow through a secure Netlify Function
 - **SEO Ready** — includes `robots.txt` and `sitemap.xml` for search engine indexing out of the box
 - **Netlify Deployment** — configured with `netlify.toml` for continuous deployment; push to main and the site updates automatically
 - **Reusable Architecture** — structured as a clean template so future projects can be bootstrapped quickly from this base
@@ -25,6 +26,7 @@ A full-stack business website built and deployed for a real small business clien
 | Database | SQL |
 | Deployment | Netlify |
 | Auth | Environment variable-based login |
+| Automation | n8n webhook workflow |
 
 ---
 
@@ -51,12 +53,33 @@ npm install
 Create a `.env` file in the root directory:
 
 ```env
-ADMIN_USERNAME=your_admin_username
+ADMIN_EMAIL=your_admin_email
 ADMIN_PASSWORD=your_secure_password
-DB_CONNECTION=your_database_connection_string
+ADMIN_AUTH_SECRET=your_random_auth_secret
+N8N_CHAT_WEBHOOK_URL=https://your-n8n-domain/webhook/your-production-chat-webhook
+N8N_CHAT_SECRET=your_shared_chat_secret
+N8N_CHAT_TIMEOUT_MS=12000
 ```
 
 > ⚠️ Never commit your `.env` file. It is already listed in `.gitignore`.
+
+### n8n Chat Workflow
+
+The public chatbot calls `/api/chat`, and that Netlify Function forwards messages to n8n. Configure the n8n workflow with:
+
+- A Webhook Trigger using `POST`
+- Header authentication with the header name `x-libretas-chat-secret`
+- The same header value stored in Netlify as `N8N_CHAT_SECRET`
+- A Respond to Webhook node that returns JSON:
+
+```json
+{
+  "reply": "message for the visitor",
+  "suggestions": ["Ver catalogo", "Pedido personalizado", "Contacto"]
+}
+```
+
+Use the published production webhook URL as `N8N_CHAT_WEBHOOK_URL`. The browser should only call `/api/chat`; do not expose the n8n webhook URL in frontend code.
 
 ### Running Locally
 
