@@ -122,6 +122,8 @@ export default async (req) => {
 
   const body = await req.json().catch(() => null);
   const message = normalizeText(body?.message);
+  const sessionId = normalizeText(body?.sessionId);
+  const page = normalizePage(body?.page);
 
   if (!message) {
     return json({ error: "El mensaje es obligatorio." }, 400);
@@ -138,9 +140,15 @@ export default async (req) => {
         [CHAT_HEADER_NAME]: webhookSecret,
       },
       body: JSON.stringify({
+        action: "sendMessage",
+        chatInput: message,
         message,
-        sessionId: normalizeText(body?.sessionId),
-        page: normalizePage(body?.page),
+        sessionId,
+        page,
+        metadata: {
+          page,
+          source: "libretas-roca-site",
+        },
       }),
       signal: controller.signal,
     });
