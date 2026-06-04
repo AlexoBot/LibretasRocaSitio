@@ -1,5 +1,5 @@
-import { neon } from '@netlify/neon'
- 
+import { db } from './item-table.js'
+
 export default async (req) => {
   const apiKey = req.headers.get('x-api-key')
   if (!apiKey || apiKey !== process.env.AGENT_SECRET_KEY) {
@@ -8,12 +8,10 @@ export default async (req) => {
       headers: { 'Content-Type': 'application/json' },
     })
   }
- 
-  const sql = neon()
- 
+
   const url = new URL(req.url)
   const p = url.searchParams
- 
+
   const categoria    = p.get('categoria')    || null
   const papel        = p.get('papel')        || null
   const encuadernado = p.get('encuadernado') || null
@@ -21,19 +19,18 @@ export default async (req) => {
   const busqueda     = p.get('q')            ? `%${p.get('q')}%` : null
 
   try {
-    const result = await sql.query(
-      `SELECT * FROM items
-       WHERE ($1::text IS NULL OR categoria = $1)
-         AND ($2::text IS NULL OR papel = $2)
-         AND ($3::text IS NULL OR encuadernado = $3)
-         AND ($4::text IS NULL OR formato = $4)
-         AND ($5::text IS NULL OR nombre ILIKE $5 OR descripcion ILIKE $5)
-       ORDER BY nombre ASC
-       LIMIT 10`,
-      [categoria, papel, encuadernado, formato, busqueda]
-    )
- 
-    return new Response(JSON.stringify(result.rows), {
+    const items = await db.sql`
+      SELECT * FROM items
+      WHERE (${categoria}::text IS NULL OR categoria = ${categoria})
+        AND (${papel}::text IS NULL OR papel = ${papel})
+        AND (${encuadernado}::text IS NULL OR encuadernado = ${encuadernado})
+        AND (${formato}::text IS NULL OR formato = ${formato})
+        AND (${busqueda}::text IS NULL OR nombre ILIKE ${busqueda} OR descripcion ILIKE ${busqueda})
+      ORDER BY nombre ASC
+      LIMIT 10
+    `
+
+    return new Response(JSON.stringify(items), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     })
@@ -44,5 +41,5 @@ export default async (req) => {
     )
   }
 }
- 
+
 export const config = { path: '/api/libretas' }
