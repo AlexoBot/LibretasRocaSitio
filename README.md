@@ -88,6 +88,63 @@ Use the published production webhook URL as `N8N_CHAT_WEBHOOK_URL`. The browser 
 npx netlify dev
 ```
 
+### 🤖Agent Catalog API (`/api/libretas`)
+---
+
+The `/api/libretas` endpoint is a protected search endpoint designed for use by the __n8n__ AI agent. It allows the chatbot to query the product catalog with optional filters and return up to 10 matching items.
+
+**Authentication**
+
+All requests must include the `x-api-key` header. Set the key in your environment as `AGENT_SECRET_KEY`:
+
+```env
+AGENT_SECRET_KEY=your_secret_agent_key
+```
+
+**Query Parameters**
+
+| Parameter | Description | Valid Values |
+|-----------|-------------|--------------|
+| `categoria` | Filter by category | `notas`, `agenda`, `dibujo`, `regalo` |
+| `papel` | Filter by paper type | `Blanco`, `Liso`, `Rayado`, `Punteado`, `Negro`, `Colores` |
+| `encuadernado` | Filter by binding type | `Pasta Dura`, `Espiral`, `Block` |
+| `formato` | Filter by format/size | `Vertical`, `Horizontal`, `Profesional`, `Bolsillo`, `Mini` |
+| `q` | Full-text search on name and description | Any string |
+
+All parameters are optional. Omitting a parameter returns items regardless of that field's value.
+
+**Example Request (n8n HTTP Request node)**
+
+```
+GET https://your-site.netlify.app/api/libretas?categoria=notas&papel=Rayado
+Headers:
+  x-api-key: your_secret_agent_key
+```
+
+**Example Response**
+
+```json
+[
+  {
+    "id": 1,
+    "nombre": "Libreta Rayada Pequeña",
+    "categoria": "notas",
+    "papel": "Rayado",
+    "formato": "Bolsillo",
+    "encuadernado": "Espiral",
+    "descripcion": "Libreta compacta para notas rápidas.",
+    "imagen_key": "images/1234567890-abc.jpg",
+    "created_at": "2026-05-10T12:00:00.000Z"
+  }
+]
+```
+
+**Implementation Note**
+
+This endpoint uses `db` from `./item-table.js` (same `@netlify/database` connection as all other endpoints). Do not replace this with a direct `@netlify/neon` import — doing so risks connecting to a different database instance and returning empty results even when the table has data.
+
+---
+
 ### Deployment
 
 >⚠️ **Database Migrations Note:** The database migrations are hashed and locked by Netlify on first deployment. Once deployed, the original SQL migration files cannot be modified — any schema changes must be made as new migration files rather than editing existing ones.

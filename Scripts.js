@@ -271,6 +271,49 @@ function getChatSessionId() {
   }
 }
 
+function parseRichText(text) {
+  // Escape HTML first to prevent XSS
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+  // Process line by line to handle lists
+  const lines = escaped.split("\n");
+  const result = [];
+  let listBuffer = [];
+
+  const flushList = () => {
+    if (listBuffer.length) {
+      result.push(`<ul>${listBuffer.map(li => `<li>${li}</li>`).join("")}</ul>`);
+      listBuffer = [];
+    }
+  };
+
+  for (const line of lines) {
+    const listMatch = line.match(/^[-*]\s+(.+)/);
+    if (listMatch) {
+      listBuffer.push(formatInline(listMatch[1]));
+    } else {
+      flushList();
+      result.push(formatInline(line));
+    }
+  }
+  flushList();
+
+  return result.join("<br>")
+    .replace(/<br>(<ul>)/g, "$1")
+    .replace(/(<\/ul>)<br>/g, "$1");
+}
+
+function formatInline(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/_(.+?)_/g, "<em>$1</em>")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+}
+
 function createChatIcon() {
   return `
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -332,13 +375,24 @@ function initChatWidget() {
   };
 
   const setOpen = (open) => {
-    panel.hidden = !open;
     widget.classList.toggle("is-open", open);
     toggle.setAttribute("aria-expanded", String(open));
     toggle.setAttribute("aria-label", open ? "Cerrar chat" : "Abrir chat");
 
     if (open) {
+      panel.hidden = false;
+      panel.classList.remove("chat-panel--closing");
+      panel.classList.add("chat-panel--opening");
       setTimeout(() => input.focus(), 80);
+    } else {
+      panel.classList.remove("chat-panel--opening");
+      panel.classList.add("chat-panel--closing");
+      const onEnd = () => {
+        panel.hidden = true;
+        panel.classList.remove("chat-panel--closing");
+        panel.removeEventListener("animationend", onEnd);
+      };
+      panel.addEventListener("animationend", onEnd);
     }
   };
 
@@ -351,15 +405,28 @@ function initChatWidget() {
     });
   };
 
-  const appendMessage = (type, text, { loading = false } = {}) => {
+  const appendMessage = (type, text) => {
     const message = document.createElement("article");
     message.className = `chat-message chat-message-${type}`;
-    if (loading) {
-      message.classList.add("is-loading");
-    }
 
     const bubble = document.createElement("p");
-    bubble.textContent = text;
+    if (type === "bot") {
+      bubble.innerHTML = parseRichText(text);
+    } else {
+      bubble.textContent = text;
+    }
+    message.appendChild(bubble);
+    messages.appendChild(message);
+    messages.scrollTop = messages.scrollHeight;
+    return message;
+  };
+
+  const appendLoadingMessage = () => {
+    const message = document.createElement("article");
+    message.className = "chat-message chat-message-bot is-loading";
+    const bubble = document.createElement("p");
+    bubble.className = "chat-dots";
+    bubble.innerHTML = "<span></span><span></span><span></span>";
     message.appendChild(bubble);
     messages.appendChild(message);
     messages.scrollTop = messages.scrollHeight;
@@ -430,7 +497,7 @@ function initChatWidget() {
     input.value = "";
     setSending(true);
 
-    const loadingMessage = appendMessage("bot", "Escribiendo...", { loading: true });
+    const loadingMessage = appendLoadingMessage();
 
     try {
       const payload = await sendMessage(text);
